@@ -97,6 +97,19 @@ function MdCheckboxDirective(inputDirective, $mdAria, $mdConstant, $mdTheming, $
       var containerCtrl = ctrls[0];
       var ngModelCtrl = ctrls[1] || $mdUtil.fakeNgModel();
       var formCtrl = ctrls[2];
+      var labelHasLink = element.find('a').length > 0;
+
+      if (labelHasLink) {
+        var labelId = 'label-' + $mdUtil.nextUid();
+        attr.$set('aria-labelledby', labelId);
+
+        var label = element.children()[1];
+        var labelContents = label.innerHTML;
+        label.remove();
+        element.after('<span id="' + labelId + '" class="md-checkbox-link-label">' + labelContents + '</span>');
+        var externalLabel = element.next();
+        externalLabel.on('click', listener);
+      }
 
       if (containerCtrl) {
         var isErrorGetter = containerCtrl.isErrorGetter || function() {
@@ -133,7 +146,9 @@ function MdCheckboxDirective(inputDirective, $mdAria, $mdConstant, $mdTheming, $
         false: attr.tabindex
       });
 
-      $mdAria.expectWithText(element, 'aria-label');
+      if (!labelHasLink) {
+        $mdAria.expectWithText(element, 'aria-label');
+      }
 
       // Reuse the original input[type=checkbox] directive from AngularJS core.
       // This is a bit hacky as we need our own event listener and own render
@@ -178,7 +193,7 @@ function MdCheckboxDirective(inputDirective, $mdAria, $mdConstant, $mdTheming, $
       function listener(ev) {
         // skipToggle boolean is used by the switch directive to prevent the click event
         // when releasing the drag. There will be always a click if releasing the drag over the checkbox
-        if (element[0].hasAttribute('disabled') || scope.skipToggle) {
+        if (element[0].hasAttribute('disabled') || scope.skipToggle || ev.target.tagName === 'A') {
           return;
         }
 
